@@ -1,0 +1,6 @@
+build/
+build-*/
+.geode/
+.vscode/
+.idea/
+.DS_Store
