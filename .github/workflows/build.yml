@@ -1,0 +1,29 @@
+name: Build Android
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android64:
+    name: Build ClickGuard for Android 64-bit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Build Geode mod
+        id: build
+        uses: geode-sdk/build-geode-mod@main
+        with:
+          target: Android64
+          build-config: Release
+      - name: Upload .geode package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClickGuard-Android64
+          path: ${{ steps.build.outputs.build-output }}
+          if-no-files-found: error
