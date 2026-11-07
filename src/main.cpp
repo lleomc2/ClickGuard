@@ -70,7 +70,7 @@ void showBufferPanel() {
 
             auto* mod = Mod::get();
             const int current = mod->getSettingValue<bool>("enabled")
-                ? std::clamp(mod->getSettingValue<int>("buffer-ticks"), 0, 16)
+                ? std::clamp(mod->getSettingValue<int>("buffer-ticks"), 0, 240)
                 : 0;
             const int next = nextTicks(current);
             mod->setSettingValue<int>("buffer-ticks", next);
