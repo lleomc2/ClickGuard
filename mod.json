@@ -3,23 +3,23 @@
   "gd": { "android": "2.2081" },
   "id": "lleomc2.clickguard",
   "name": "ClickGuard",
-  "version": "v1.0.0",
+  "version": "v1.1.0",
   "developer": "lleomc2",
-  "description": "Reduce accidental duplicate touch inputs with a configurable short click guard.",
+  "description": "Tick-based input buffer for Android 64-bit with quick controls in the pause menu.",
   "settings": {
     "enabled": {
       "type": "bool",
       "name": "Enable ClickGuard",
-      "description": "Turn the duplicate-input guard on or off.",
+      "description": "Turn the tick-based input buffer on or off.",
       "default": true
     },
-    "debounce-ms": {
+    "buffer-ticks": {
       "type": "int",
-      "name": "Guard window (ms)",
-      "description": "Minimum time between accepted press inputs for the same player and button. Set to 0 to disable filtering.",
-      "default": 45,
+      "name": "Buffer window (ticks)",
+      "description": "Delay press and release events by this number of physics ticks. One tick is 1/240 second. Set to 0 for raw input. The pause-menu button cycles 2, 4, 8, 16 and OFF; Wave is capped at 8 ticks.",
+      "default": 2,
       "min": 0,
-      "max": 150
+      "max": 16
     }
   }
 }
