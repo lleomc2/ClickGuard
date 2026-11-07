@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <deque>
 #include <string>
+#include <unordered_map>
 
 using namespace geode::prelude;
 
@@ -16,6 +17,15 @@ struct PendingInput {
     bool isPlayer1;
     int ticksLeft;
 };
+
+struct LayerState {
+    std::deque<PendingInput> pending;
+    bool injecting = false;
+};
+
+// Keyed by the real game-layer pointer so both GJBaseGameLayer and PlayLayer
+// hooks can safely access and clear the same queue.
+inline std::unordered_map<GJBaseGameLayer*, LayerState> layerStates;
 
 inline int configuredTicks() {
     if (!Mod::get()->getSettingValue<bool>("enabled")) {
@@ -71,16 +81,11 @@ void showBufferPanel() {
 } // namespace clickguard
 
 class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
-    struct Fields {
-        std::deque<clickguard::PendingInput> pending;
-        bool injecting = false;
-    };
-
     void handleButton(bool down, int button, bool isPlayer1) {
-        auto fields = m_fields.self();
+        auto& fields = clickguard::layerStates[this];
         const int ticks = clickguard::configuredTicks();
 
-        if (fields->injecting || ticks <= 0) {
+        if (fields.injecting || ticks <= 0) {
             GJBaseGameLayer::handleButton(down, button, isPlayer1);
             return;
         }
@@ -90,7 +95,7 @@ class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
         const int delay = (player && player->m_isDart) ? std::min(ticks, 8) : ticks;
 
         // Avoid unbounded growth if an input source floods the queue.
-        if (fields->pending.size() >= 64) {
+        if (fields.pending.size() >= 64) {
             GJBaseGameLayer::handleButton(down, button, isPlayer1);
             return;
         }
@@ -99,7 +104,7 @@ class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
     }
 
     void processCommands(float dt, bool isHalfTick, bool isLastTick) {
-        auto fields = m_fields.self();
+        auto& fields = clickguard::layerStates[this];
 
         // If the user turns the buffer off while paused, flush queued events
         // in their original order instead of leaving an input stuck.
@@ -132,9 +137,13 @@ class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
 
 class $modify(ClickGuardPlayLayer, PlayLayer) {
     void resetLevel() {
-        auto* baseLayer = static_cast<ClickGuardBaseLayer*>(this);
-        baseLayer->m_fields->pending.clear();
+        clickguard::layerStates.erase(static_cast<GJBaseGameLayer*>(this));
         PlayLayer::resetLevel();
+    }
+
+    void onExit() {
+        clickguard::layerStates.erase(static_cast<GJBaseGameLayer*>(this));
+        PlayLayer::onExit();
     }
 };
 
