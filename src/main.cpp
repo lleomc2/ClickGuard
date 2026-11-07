@@ -2,6 +2,7 @@
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/modify/PauseLayer.hpp>
+#include <algorithm>
 #include <deque>
 #include <string>
 
@@ -53,10 +54,12 @@ void showBufferPanel() {
             }
 
             auto* mod = Mod::get();
-            const int next = nextTicks(
-                std::clamp(mod->getSettingValue<int>("buffer-ticks"), 0, 16)
-            );
+            const int current = mod->getSettingValue<bool>("enabled")
+                ? std::clamp(mod->getSettingValue<int>("buffer-ticks"), 0, 16)
+                : 0;
+            const int next = nextTicks(current);
             mod->setSettingValue<int>("buffer-ticks", next);
+            mod->setSettingValue<bool>("enabled", next != 0);
 
             Loader::get()->queueInMainThread([] {
                 showBufferPanel();
