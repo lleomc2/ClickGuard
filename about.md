@@ -1,5 +1,1 @@
-# ClickGuard
-
-ClickGuard is a lightweight input helper for Geometry Dash 2.2081 on Android. It can ignore a second press of the same button when it arrives inside a very short configurable time window.
-
-The feature is optional and can be disabled in the mod settings. Button release events are never filtered.
+ClickGuard v1.1.0 adds a tick-based input queue for Geometry Dash 2.2081 on Android64. Open the small round button in the level pause menu to choose 2, 4, 8, 16 ticks, or OFF. One tick is 1/240 second. This build delays press/release events; it does not include AfterFlow's predictive ghost-player simulation.
