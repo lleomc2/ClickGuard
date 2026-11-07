@@ -1,31 +1,172 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
-#include <array>
-#include <chrono>
+#include <Geode/modify/PlayLayer.hpp>
+#include <Geode/modify/PauseLayer.hpp>
+#include <deque>
+#include <string>
 
 using namespace geode::prelude;
 
-// Filter only very fast repeated DOWN events. UP events always pass through.
+namespace clickguard {
+
+struct PendingInput {
+    bool down;
+    int button;
+    bool isPlayer1;
+    int ticksLeft;
+};
+
+inline int configuredTicks() {
+    if (!Mod::get()->getSettingValue<bool>("enabled")) {
+        return 0;
+    }
+    return std::clamp(Mod::get()->getSettingValue<int>("buffer-ticks"), 0, 16);
+}
+
+inline int nextTicks(int current) {
+    switch (current) {
+        case 2: return 4;
+        case 4: return 8;
+        case 8: return 16;
+        case 16: return 0;
+        default: return 2;
+    }
+}
+
+void showBufferPanel() {
+    const int ticks = configuredTicks();
+    const std::string current = ticks == 0
+        ? "OFF (raw input)"
+        : std::to_string(ticks) + " ticks";
+
+    createQuickPopup(
+        "ClickGuard",
+        "INPUT BUFFER\n\nCurrent window: " + current +
+        "\n\nNEXT cycles through 2, 4, 8, 16 ticks and OFF. "
+        "One tick is 1/240 second. Larger values add more delay.\n\n"
+        "This is a tick-based input queue, not AfterFlow's full ghost-player prediction.",
+        "CLOSE",
+        "NEXT",
+        [](FLAlertLayer*, bool chooseNext) {
+            if (!chooseNext) {
+                return;
+            }
+
+            auto* mod = Mod::get();
+            const int next = nextTicks(
+                std::clamp(mod->getSettingValue<int>("buffer-ticks"), 0, 16)
+            );
+            mod->setSettingValue<int>("buffer-ticks", next);
+
+            Loader::get()->queueInMainThread([] {
+                showBufferPanel();
+            });
+        }
+    );
+}
+
+} // namespace clickguard
+
 class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
+    struct Fields {
+        std::deque<clickguard::PendingInput> pending;
+        bool injecting = false;
+    };
+
     void handleButton(bool down, int button, bool isPlayer1) {
-        if (down && Mod::get()->getSettingValue<bool>("enabled")) {
-            const int windowMs = Mod::get()->getSettingValue<int>("debounce-ms");
-            if (windowMs > 0 && button >= 0 && button < 16) {
-                using Clock = std::chrono::steady_clock;
-                static std::array<std::array<Clock::time_point, 16>, 2> lastAccepted{};
-                const auto now = Clock::now();
-                const size_t player = isPlayer1 ? 0u : 1u;
-                const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    now - lastAccepted[player][static_cast<size_t>(button)]
-                ).count();
-                if (elapsed < windowMs) return;
-                lastAccepted[player][static_cast<size_t>(button)] = now;
+        auto fields = m_fields.self();
+        const int ticks = clickguard::configuredTicks();
+
+        if (fields->injecting || ticks <= 0) {
+            GJBaseGameLayer::handleButton(down, button, isPlayer1);
+            return;
+        }
+
+        // Wave uses a shorter window so taps do not become excessively delayed.
+        auto* player = isPlayer1 ? m_player1 : m_player2;
+        const int delay = (player && player->m_isDart) ? std::min(ticks, 8) : ticks;
+
+        // Avoid unbounded growth if an input source floods the queue.
+        if (fields->pending.size() >= 64) {
+            GJBaseGameLayer::handleButton(down, button, isPlayer1);
+            return;
+        }
+
+        fields->pending.push_back({ down, button, isPlayer1, delay });
+    }
+
+    void processCommands(float dt, bool isHalfTick, bool isLastTick) {
+        auto fields = m_fields.self();
+
+        // If the user turns the buffer off while paused, flush queued events
+        // in their original order instead of leaving an input stuck.
+        if (clickguard::configuredTicks() <= 0 && !fields->pending.empty()) {
+            fields->injecting = true;
+            for (const auto& input : fields->pending) {
+                GJBaseGameLayer::handleButton(input.down, input.button, input.isPlayer1);
+            }
+            fields->pending.clear();
+            fields->injecting = false;
+        }
+
+        for (auto it = fields->pending.begin(); it != fields->pending.end();) {
+            --it->ticksLeft;
+            if (it->ticksLeft <= 0) {
+                const auto input = *it;
+                it = fields->pending.erase(it);
+
+                fields->injecting = true;
+                GJBaseGameLayer::handleButton(input.down, input.button, input.isPlayer1);
+                fields->injecting = false;
+            } else {
+                ++it;
             }
         }
-        GJBaseGameLayer::handleButton(down, button, isPlayer1);
+
+        GJBaseGameLayer::processCommands(dt, isHalfTick, isLastTick);
+    }
+};
+
+class $modify(ClickGuardPlayLayer, PlayLayer) {
+    void resetLevel() {
+        auto* baseLayer = static_cast<ClickGuardBaseLayer*>(this);
+        baseLayer->m_fields->pending.clear();
+        PlayLayer::resetLevel();
+    }
+};
+
+class $modify(ClickGuardPauseLayer, PauseLayer) {
+    void customSetup() {
+        PauseLayer::customSetup();
+
+        auto* menu = CCMenu::create();
+        auto* icon = CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png");
+        if (!menu || !icon) {
+            return;
+        }
+
+        auto* button = CCMenuItemSpriteExtra::create(
+            icon,
+            this,
+            menu_selector(ClickGuardPauseLayer::onClickGuard)
+        );
+        if (!button) {
+            return;
+        }
+
+        const auto winSize = CCDirector::sharedDirector()->getWinSize();
+        button->setScale(0.72f);
+        button->setPosition({ winSize.width - 35.f, winSize.height - 43.f });
+        menu->setPosition(CCPointZero);
+        menu->addChild(button);
+        this->addChild(menu, 1000);
+    }
+
+    void onClickGuard(CCObject*) {
+        clickguard::showBufferPanel();
     }
 };
 
 $on_mod(Loaded) {
-    log::info("ClickGuard loaded for Geometry Dash 2.2081.");
+    log::info("ClickGuard tick buffer loaded for Geometry Dash 2.2081 Android64.");
 }
