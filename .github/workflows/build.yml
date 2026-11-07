@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  build-android64:
-    name: Build ClickGuard for Android 64-bit
+  build-android:
+    name: Build ClickGuard for Android
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -21,10 +21,10 @@ jobs:
 
       - name: Install Android NDK 27 and Ninja
         run: |
-          sdkmanager --install "ndk;27.2.12479018"
+          sdkmanager --install "ndk;28.2.13676358"
           sudo apt-get update
           sudo apt-get install -y ninja-build
-          test -f "$ANDROID_SDK_ROOT/ndk/27.2.12479018/build/cmake/android.toolchain.cmake"
+          test -f "$ANDROID_SDK_ROOT/ndk/28.2.13676358/build/cmake/android.toolchain.cmake"
           ninja --version
 
       - name: Build Geode mod
@@ -39,6 +39,6 @@ jobs:
       - name: Upload .geode package
         uses: actions/upload-artifact@v4
         with:
-          name: ClickGuard-Android64
+          name: ClickGuard-Android
           path: ${{ steps.build.outputs.build-output }}
           if-no-files-found: error
