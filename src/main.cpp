@@ -31,7 +31,7 @@ inline int configuredTicks() {
     if (!Mod::get()->getSettingValue<bool>("enabled")) {
         return 0;
     }
-    return std::clamp(Mod::get()->getSettingValue<int>("buffer-ticks"), 0, 16);
+    return std::clamp(Mod::get()->getSettingValue<int>("buffer-ticks"), 0, 240);
 }
 
 inline int nextTicks(int current) {
@@ -39,7 +39,12 @@ inline int nextTicks(int current) {
         case 2: return 4;
         case 4: return 8;
         case 8: return 16;
-        case 16: return 0;
+        case 16: return 32;
+        case 32: return 60;
+        case 60: return 120;
+        case 120: return 180;
+        case 180: return 240;
+        case 240: return 0;
         default: return 2;
     }
 }
@@ -95,7 +100,7 @@ class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
         const int delay = (player && player->m_isDart) ? std::min(ticks, 8) : ticks;
 
         // Avoid unbounded growth if an input source floods the queue.
-        if (fields.pending.size() >= 64) {
+        if (fields.pending.size() >= 512) {
             GJBaseGameLayer::handleButton(down, button, isPlayer1);
             return;
         }
