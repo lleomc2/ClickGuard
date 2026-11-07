@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0
+- Replace the millisecond duplicate-click filter with a tick-based input queue.
+- Add selectable 2, 4, 8, 16 tick windows and OFF.
+- Add a circular ClickGuard button to the level pause menu.
+- Add a quick in-game panel to cycle the buffer setting.
+- Keep Android64 / Geometry Dash 2.2081 as the target.
+
 ## v1.0.0
-- Initial Android 2.2081 implementation.
-- Configurable duplicate-press guard window.
+- Initial Android64 duplicate-click guard.
