@@ -159,8 +159,8 @@ class $modify(ClickGuardPauseLayer, PauseLayer) {
 
         const auto winSize = CCDirector::sharedDirector()->getWinSize();
         button->setScale(0.72f);
-        button->setPosition({ winSize.width - 35.f, winSize.height - 43.f });
-        menu->setPosition(CCPointZero);
+        button->setPosition(CCPointZero);
+        menu->setPosition({ winSize.width - 35.f, winSize.height - 43.f });
         menu->addChild(button);
         this->addChild(menu, 1000);
     }
