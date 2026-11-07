@@ -19,12 +19,12 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install Android NDK 28 and Ninja
+      - name: Install Android NDK 30 and Ninja
         run: |
-          sdkmanager --install "ndk;28.0.13004108"
+          sdkmanager --install "ndk;30.0.16248370"
           sudo apt-get update
           sudo apt-get install -y ninja-build
-          test -f "$ANDROID_SDK_ROOT/ndk/28.0.13004108/build/cmake/android.toolchain.cmake"
+          test -f "$ANDROID_SDK_ROOT/ndk/30.0.16248370/build/cmake/android.toolchain.cmake"
           ninja --version
 
       - name: Build Geode mod
@@ -34,7 +34,7 @@ jobs:
           target: Android64
           sdk: 5.11.2
           build-config: Release
-          android-ndk-version: 28.0.13004108
+          android-ndk-version: 30.0.16248370
 
       - name: Upload .geode package
         uses: actions/upload-artifact@v4
