@@ -100,7 +100,7 @@ class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
             return;
         }
 
-        fields->pending.push_back({ down, button, isPlayer1, delay });
+        fields.pending.push_back({ down, button, isPlayer1, delay });
     }
 
     void processCommands(float dt, bool isHalfTick, bool isLastTick) {
@@ -108,24 +108,24 @@ class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
 
         // If the user turns the buffer off while paused, flush queued events
         // in their original order instead of leaving an input stuck.
-        if (clickguard::configuredTicks() <= 0 && !fields->pending.empty()) {
-            fields->injecting = true;
-            for (const auto& input : fields->pending) {
+        if (clickguard::configuredTicks() <= 0 && !fields.pending.empty()) {
+            fields.injecting = true;
+            for (const auto& input : fields.pending) {
                 GJBaseGameLayer::handleButton(input.down, input.button, input.isPlayer1);
             }
-            fields->pending.clear();
-            fields->injecting = false;
+            fields.pending.clear();
+            fields.injecting = false;
         }
 
-        for (auto it = fields->pending.begin(); it != fields->pending.end();) {
+        for (auto it = fields.pending.begin(); it != fields.pending.end();) {
             --it->ticksLeft;
             if (it->ticksLeft <= 0) {
                 const auto input = *it;
-                it = fields->pending.erase(it);
+                it = fields.pending.erase(it);
 
-                fields->injecting = true;
+                fields.injecting = true;
                 GJBaseGameLayer::handleButton(input.down, input.button, input.isPlayer1);
-                fields->injecting = false;
+                fields.injecting = false;
             } else {
                 ++it;
             }
