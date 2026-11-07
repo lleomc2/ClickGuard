@@ -15,6 +15,18 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android NDK 27 and Ninja
+        run: |
+          sdkmanager --install "ndk;27.2.12479018"
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          test -f "$ANDROID_SDK_ROOT/ndk/27.2.12479018/build/cmake/android.toolchain.cmake"
+          ninja --version
+
       - name: Build Geode mod
         id: build
         uses: geode-sdk/build-geode-mod@main
@@ -22,6 +34,7 @@ jobs:
           target: Android64
           build-config: Release
           android-ndk-version: 27.2.12479018
+
       - name: Upload .geode package
         uses: actions/upload-artifact@v4
         with:
