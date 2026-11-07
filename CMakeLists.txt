@@ -3,8 +3,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
-# Work around missing standard-library includes in transitive dependencies.
-add_compile_options("-include" "type_traits" "-include" "atomic")
+# Keep each forced standard-library include paired with its own -include flag.
+# SHELL: prevents CMake from de-duplicating the repeated -include option.
+add_compile_options("SHELL:-include type_traits" "SHELL:-include atomic")
 
 project(ClickGuard VERSION 1.0.0)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
