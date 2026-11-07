@@ -19,7 +19,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install Android NDK 27 and Ninja
+      - name: Install Android NDK 28 and Ninja
         run: |
           sdkmanager --install "ndk;28.2.13676358"
           sudo apt-get update
@@ -34,7 +34,7 @@ jobs:
           target: Android64
           sdk: latest
           build-config: Release
-          android-ndk-version: 27.2.12479018
+          android-ndk-version: 28.2.13676358
 
       - name: Upload .geode package
         uses: actions/upload-artifact@v4
