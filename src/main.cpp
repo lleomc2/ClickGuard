@@ -58,7 +58,7 @@ void showBufferPanel() {
     createQuickPopup(
         "ClickGuard",
         "INPUT BUFFER\n\nCurrent window: " + current +
-        "\n\nNEXT cycles through 2, 4, 8, 16 ticks and OFF. "
+        "\n\nNEXT cycles through 2, 4, 8, 16, 32, 60, 120, 180, 240 ticks and OFF. "
         "One tick is 1/240 second. Larger values add more delay.\n\n"
         "This is a tick-based input queue, not AfterFlow's full ghost-player prediction.",
         "CLOSE",
@@ -95,9 +95,8 @@ class $modify(ClickGuardBaseLayer, GJBaseGameLayer) {
             return;
         }
 
-        // Wave uses a shorter window so taps do not become excessively delayed.
-        auto* player = isPlayer1 ? m_player1 : m_player2;
-        const int delay = (player && player->m_isDart) ? std::min(ticks, 8) : ticks;
+        // Apply the selected tick window in every mode, including Wave.
+        const int delay = ticks;
 
         // Avoid unbounded growth if an input source floods the queue.
         if (fields.pending.size() >= 512) {
